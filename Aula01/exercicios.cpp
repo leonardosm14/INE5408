@@ -76,9 +76,9 @@ vetor após a chamada do método: [E, D, C, B, A]
 void inversao(int vet[], int N) {
     // ... COLOQUE SEU CÓDIGO AQUI ...
     int *vInv = new int[N];
-    int M = N;
+    int M = N-1;
     for (int i = 0; i < N; i++) {
-        vInv[M-1] = vet[i];
+        vInv[M] = vet[i];
         M--;
     }
     for (int j = 0; j < N; j++) {
