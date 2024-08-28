@@ -86,7 +86,6 @@ void inversao(int vet[], int N) {
     }
 }
 
-
 /*
     *** Importante ***
 
