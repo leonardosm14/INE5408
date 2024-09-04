@@ -88,8 +88,8 @@ void turmas_divisao(Aluno t[], int k, int N, Aluno **pt1, Aluno **pt2) {
     }
 
     for (int j = k; j < N; j++) {
-        t2[j].escreveNome(t[j].devolveNome());
-        t2[j].escreveMatricula(t[j].devolveMatricula());
+        t2[j-k].escreveNome(t[j].devolveNome());
+        t2[j-k].escreveMatricula(t[j].devolveMatricula());
 
     }
 
