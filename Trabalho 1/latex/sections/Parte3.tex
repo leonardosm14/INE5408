@@ -1,0 +1,42 @@
+\section{ARQUIVO MAIN}
+
+Tendo criado os métodos que resolvem os problemas, precisamos chamá-los na função main(). É importante ressaltar que para o segundo problema, como podemos ter diversas matrizes no mesmo XML, é necessário fazer um loop que instância um $Cenario$ com posição inicial referente à posição final do último cenário lido. Desse modo, teremos a função main completa.
+
+\begin{lstlisting}[language=c++]
+int main() {
+
+    string filename;
+    cin >> filename;
+
+    ifstream filexml(filename);
+    if (!filexml.is_open()) {
+        cerr << "Erro ao abrir o arquivo " << filename << endl;
+        throw runtime_error("Erro no arquivo XML");
+    }
+
+    // Leitura do XML completo para 'texto'
+    string texto;
+    char character;
+    while (filexml.get(character)) {
+        texto += character;
+    }
+
+    // Problema 1
+    bool aninhamentos = verifica_aninhamentos(texto);
+
+    if (!aninhamentos) {
+        cout << "Erro de aninhamentos" << endl;
+    } else {
+        // Problema 2
+         size_t num_matrizes = quantidade_matrizes(texto);
+         size_t i = 0;
+         for (size_t m = 0; m < num_matrizes; m++) {
+            Cenario c(texto, i); 
+            size_t area = calcula_area(c);
+            cout << c.nome << " " << area << endl;
+            i = c.indice_final;
+        }
+    }
+    return 0;
+}
+\end{lstlisting}

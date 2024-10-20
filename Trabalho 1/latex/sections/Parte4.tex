@@ -1,0 +1,7 @@
+\section{CONCLUSÃO}
+
+Como conclusão, vamos apontar as dificuldades na resolução dos problemas. 
+
+Em relação ao primeiro, o principal desafio se deu pelo fato de que não podíamos tratar como um simples problema de aninhamentos de abertura e fechamento de chaves '<' e '>'. Por isso, a solução adotada buscou implementar uma pilha que armazenava as tags completas. Assim, quando a sequência '</' fosse identificada, era necessário verificar se a string formada até o fechamento da chave correspondia à que estava no topo da pilha, garantindo que os pares de abertura e fechamento fossem corretos. Essa abordagem se mostrou eficaz para lidar com a estrutura de aninhamento mais complexa, além de verificar possíveis erros estruturais nos arquivos XML fornecidos.
+
+Já no segundo problema, a estrutura de fila permitiu que o processamento das células visitadas fosse realizado de forma simples. Dessa forma, o uso da fila, em conjunto com a busca em largura, facilitou o processo de expansão da área de limpeza, mantendo o controle das posições já processadas e evitando que o robô saísse dos limites da string matriz.

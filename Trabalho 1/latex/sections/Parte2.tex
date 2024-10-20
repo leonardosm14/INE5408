@@ -1,0 +1,157 @@
+
+\section{PROBLEMA 2}
+
+Neste problema, o objetivo é calcular a área total que um robô consegue limpar, começando de uma posição inicial (x, y) dentro de uma matriz binária. Cada matriz no arquivo representa um ambiente, e as células com valor '1' indicam áreas que o robô pode limpar, enquanto as células com '0' representam obstáculos ou áreas já limpas.
+
+
+O algoritmo de limpeza segue uma lógica de propagação a partir da posição inicial (x, y). A partir dessa posição, o robô pode se mover em quatro direções diferentes, que são descritas pelo vetor de direções $\vec{d}$  = $\{(-1, 0), (1, 0), (0, -1), (0, 1)\}$. Essas direções correspondem, respectivamente, aos \textbf{movimentos para cima, para baixo, para a esquerda e para a direita}. A cada movimento, as coordenadas (x, y) do robô são atualizadas somando-se os valores dessas direções ao valor atual da posição, permitindo que ele explore áreas adjacentes.
+
+
+O robô continuará se movendo para todas as células adjacentes que contêm o valor '1' e que ainda não foram visitadas, até que todas as possíveis áreas acessíveis a partir da posição inicial sejam exploradas. Ao final do processo, a \textbf{área} total limpa pelo robô será a soma de todas as células conectadas que contêm '1'.
+
+Para isso, alguns códigos para a extração das informações relevantes dos arquivos XML já foram fornecidos pelo docente. Nesse caso, temos a \textbf{classe Cenário}, com atributos públicos size\_t \textbf{nome}, size\_t \textbf{altura}, size\_t \textbf{largura}, size\_t \textbf{x}, size\_t \textbf{y}, string \textbf{matriz} e size\_t \textbf{índice final} - este último representa o índice final do cenário lido. Vale ressaltar também que o construtor dessa classe recebe como parâmetros a string texto e o índice inicial de leitura do cenário: \textbf{Cenario(string& texto, size\_t indice\_inicial)}. Portanto, para o primeiro caso, vamos inicilizar com indice\_inicial = 0;
+
+Nota-se, também, que a matriz está sendo dada, na verdade, em forma de string. Então, para acessarmos um índice correspondente à linha $i$ e coluna $j$, precisaremos realizar o cálculo $E[i \times \text{largura} + j]$, onde E é a matriz string e $0 \leq i < \text{largura}$ e $0 \leq j < \text{altura}$.
+
+Sabendo disso, primeiramente criamos um método para percorrer a string texto e retornar a quantidade de matrizes presentes no cenário. Isso será útil para atualizar a lógica de cenários que necessita de um índice inicial na instanciação, como vimos anteriormente.
+\begin{lstlisting}[language=c++]
+size_t quantidade_matrizes(string texto) {
+    size_t count = 0;
+    size_t pos = 0;
+    while ((pos = texto.find("<matriz>", pos)) != string::npos) {
+        count++;
+        pos += 8; // comprimento da tag <matriz>
+    }
+    return count;
+}
+\end{lstlisting}
+
+Agora, precisamos criar de fato a função que recebe um cenário e extrai a área a ser limpa pelo robô, chamada \texttt{int calcula\_area(Cenario\& c)}. Nesse mesmo método, iremos utilizar uma estrutura de dados de Fila (\textit{Array Queue}), que segue a lógica FIFO (\textit{First in, first out}), para armazenar os pares (x, y) acessíveis. (O código completo da fila está descrito no Anexo 2.)
+\begin{lstlisting}[language=c++]
+size_t calcula_area(Cenario& c) {
+
+    // Copia a matriz, posicao inicial do robo e as dimensoes do cenario
+    string E = c.matriz;
+    size_t x = c.x;
+    size_t y = c.y;
+    size_t altura = c.altura;
+    size_t largura = c.largura;
+
+    // Inicializa a variavel de area como 0 (nao ha area limpa inicialmente)
+    size_t area = 0;
+
+    // Vetor de direcoes movimentos possiveis (cima, baixo, esquerda e direita)
+    vector<pair<size_t, size_t>> direcoes = {{-1, 0}, {1, 0}, 
+                                             {0, -1}, {0, 1}};
+    
+    // Fila para explorar as posicoes acessiveis
+    structures::ArrayQueue<pair<size_t, size_t>> queue(altura*largura);
+
+    // Vetor de controle que marca as posicoes ja visitadas na matriz
+    string R = "";
+    for (int i = 0; i < E.length(); i++) {
+        R += '0';  // Inicializa todas as posicoes como nao visitadas
+    }
+
+    // Verifica se a posicao inicial (x, y) e uma celula acessivel ('1')
+    if (E[x * largura + y] == '1') {
+        // Marca a posicao como visitada e adiciona a fila de exploracao
+        R[x * largura + y] = '1';
+        queue.enqueue(make_pair(x, y));
+        area++;  // Incrementa a area limpa
+    }
+
+    // Loop para processar todas as celulas acessiveis
+    while (!queue.empty()) {
+        // Desenfileira a proxima posicao a ser processada
+        pair<size_t, size_t> aux = queue.dequeue();
+        
+        // Tenta explorar as 4 direcoes
+        for (int i = 0; i < direcoes.size(); i++) {
+            // Novas posicoes de x e y
+            size_t nx = aux.first + direcoes[i].first;
+            size_t ny = aux.second + direcoes[i].second;  
+
+            // Verifica se a nova posicao esta dentro dos limites da matriz
+            if (nx < altura && ny < largura) {
+                size_t idx = nx * largura + ny; 
+                // Se a nova posicao for acessivel ('1') e ainda nao foi visitada
+                if (E[idx] == '1' && R[idx] == '0') {
+                    // Enfileira a nova posicao e marca como visitada
+                    queue.enqueue(make_pair(nx, ny));
+                    R[idx] = '1';
+                    area++;  // Incrementa a area limpa
+                }
+            }
+        }
+    }
+    return area;
+}
+\end{lstlisting}
+
+\subsection{Exemplo de Funcionamento}
+
+Vamos exemplificar o funcionamento do algoritmo em uma matriz pequena para o problema de cálculo de área, presente no código XML seguinte.
+\newpage
+\begin{lstlisting}
+<cenarios>
+  <cenario>
+    <nome>cenario-01</nome>
+    <dimensoes><altura>5</altura><largura>5</largura></dimensoes>
+    <robo><x>2</x><y>2</y></robo>
+    <matriz>
+      11100
+      10100
+      10111
+      10001
+      11111
+    </matriz>
+  </cenario>
+</cenarios>
+\end{lstlisting}
+
+Para esse exemplo, temos que a posição inicial do robô será no ponto (2, 2). A tabela abaixo ilustra o processo de cálculo da área que o robô pode limpar, partindo da posição inicial. A coluna à esquerda mostra a etapa, e a coluna à direita mostra o estado da fila e as posições sendo processadas.
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Etapa} & \textbf{Estado da Fila} \\
+\hline
+1. Início & (2, 2) \\
+\hline
+2. Posição (2, 2) processada, posições vizinhas enfileiradas: & (1, 2), (2, 3) \\
+\hline
+3. Posição (1, 2) processada, novas posições enfileiradas: & (2, 3), (0, 2) \\
+\hline
+4. Posição (2, 3) processada, novas posições enfileiradas: & (0, 2), (2, 4) \\
+\hline
+5. Posição (0, 2) processada, novas posições enfileiradas: & (2, 4), (0, 1) \\
+\hline
+6. Posição (2, 4) processada, novas posições enfileiradas: & (0, 1), (3, 4) \\
+\hline
+7. Posição (0, 1) processada, novas posições enfileiradas: & (3, 4), (0, 0) \\
+\hline
+8. Posição (3, 4) processada, novas posições enfileiradas: & (0, 0), (4, 4) \\
+\hline
+9. Posição (0, 0) processada, novas posições enfileiradas: & (4, 4), (1, 0) \\
+\hline
+10. Posição (4, 4) processada, novas posições enfileiradas: & (1, 0), (4, 3) \\
+\hline
+11. Posição (1, 0) processada, novas posições enfileiradas: & (4, 3), (2, 0) \\
+\hline
+12. Posição (4, 3) processada, novas posições enfileiradas: & (2, 0), (4, 2) \\
+\hline
+13. Posição (2, 0) processada, novas posições enfileiradas: & (4, 2), (3, 0) \\
+\hline
+14. Posição (4, 2) processada, novas posições enfileiradas: & (3, 0), (4, 1) \\
+\hline
+15. Posição (3, 0) processada, novas posições enfileiradas: & (4, 1), (4, 0) \\
+\hline
+16. Posição (4, 1) processada, sem novas posições: & (4, 0) \\
+\hline
+17. Posição (4, 0) processada, sem novas posições: & \emptyset\ \\
+\hline
+\end{tabular}
+\caption{Processo de Cálculo de Área Usando Fila}
+\end{table}

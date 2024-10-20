@@ -1,0 +1,214 @@
+\section{INTRODUÇÃO}
+
+O seguinte relatório tem como objetivo analisar e resolver dois problemas relacionados a um arquivo XML (\textit{Extensible Markup Language}). No primeiro, vamos verificar se o aninhamento das chaves (< e >) e fechamento das marcações (tags) está correto. Já no segundo, vamos calcular a área total que um robô pode limpar partindo de uma posição (x, y) em cada uma das matrizes fornecidas nos arquivos.
+
+\subsection{Modelo de Arquivo}
+
+Antes de começar, vamos entender o modelo do arquivo XML, conforme o bloco abaixo.
+
+\begin{lstlisting}[language=XML]
+<cenarios>
+<cenario>
+<nome>cenario-01</nome>
+<dimensoes><altura>20</altura><largura>30</largura></dimensoes>
+<robo><x>10</x><y>20</y></robo>
+<matriz>
+000000000000000000000000000000
+000000000000000000000000000000
+000000000000000000000000000000
+000000000000000000000000000000
+000000000000000000000000000000
+000000000000000000000000000000
+000000000001110000000000000000
+000000000011000000000000000000
+001100100111110011111000111100
+001100100011000011000001110000
+001100100011000011111001100000
+001100100011000000111101100000
+001101100011000010011101110000
+000111100011000011111000111100
+000000000000000000000000000000
+000000000000000000000000000000
+000000000000000000000000000000
+000000000000000000000000000000
+000000000000000000000000000000
+000000000000000000000000000000
+</matriz>
+</cenario>
+... % Continue com os outros cenarios da mesma forma
+</cenarios>
+\end{lstlisting}
+
+Com isso, conseguimos extrair as informações de que o robô começará na posição P, tal que P(x, y) = (10, 20), além de que altura = 20 e largura = 30, por exemplo. Essas informações serão úteis para a questão 2. Em relação aos aninhamentos, percebemos que para o trecho mostrado, ele se demonstra correto. Tendo visto o modelo dos arquivos que estamos trabalhando, podemos dar início a resolução dos problemas apresentados.
+
+\section{PROBLEMA 1}
+
+Para verificar os aninhamentos de uma string que representa todo o arquivo XML lido, é necessário realizar essa conversão. Por isso, o docente forneceu o seguinte bloco de código, na função main, que lê o conteúdo do arquivo com nome passado por linha de comando no terminal - ex: \texttt{cenarios1.xml}.
+
+
+\begin{lstlisting}[language=c++]
+int main() {
+
+    string filename;
+    std::cin >> filename;
+
+    // Abertura do arquivo
+    ifstream filexml(filename);
+    if (!filexml.is_open()) {
+        cerr << "Erro ao abrir o arquivo " << filename << endl;
+        throw runtime_error("Erro no arquivo XML");
+    }
+
+    // Leitura do XML completo para 'texto'
+    string texto;
+    char character;
+    while (filexml.get(character)) {
+        texto += character;
+    }
+
+    ...
+\end{lstlisting}
+
+Tendo a string texto, podemos criar a função \texttt{bool verifica\_aninhamentos(string texto)}, que retorna um valor booleano (verdadeiro ou falso). Para implementar essa função, vamos utilizar a estrutura de dados linear de \textbf{Pilha} (\textit{Array Stack}), que segue a lógica LIFO (\textit{Last in, first out}), que vai armazenar as tags que estão sendo abertas e fechadas. (O código completo da pilha está descrito no Anexo 1.)
+
+Seguindo essa lógica, vamos precisar do comprimento da string para poder instanciar uma pilha com esse tamanho - note que poderíamos utilizar um valor menor, visto que o arquivo não é composto apenas por tags, mas, dessa forma, anunciamos o tamanho máximo. Assim, a lógica para resolver o problema consistiu em percorrer a string texto até o momento em que um caracter '<' é encontrado e, a partir disso, escrever a tag que ele abre até o fechamento da mesma no caractere '>'. O motivo de escrevermos a tag inteira é para caso o caractere seguinte a '<' for uma barra de fechamento '/', pois, dessa forma, garantimos que todas estão sendo devidamente validadas.
+\begin{lstlisting}[language=c++][utf-8]
+bool verifica_aninhamentos(string texto) {
+    // Calcula o comprimento da string de entrada
+    int len = texto.length();
+    // Cria uma pilha para armazenar as tags de abertura
+    structures::ArrayStack<string> stack_tags(len);
+    // Inicializa uma string vazia para armazenar o nome da tag atual
+    string tag = "";
+    // Percorre cada caractere da string de entrada
+    for (int i = 0; i < len; i++) {
+        // Se o caractere atual for um '<', significa que uma tag vai ser escrita
+        if (texto[i] == '<') {
+            // Verifica se e uma tag de fechamento se o proximo caractere for '/'
+            bool is_closing_tag = (i + 1 < len &&
+                                   texto[i + 1] == '/');
+            // Se for uma tag de fechamento, avanca o indice para pular o '/'
+            if (is_closing_tag) {
+                i++;
+            }
+            // Percorre a string ate encontrar o '>' para capturar o nome da tag
+            for (int j = i + 1; j < len; j++) {
+                // Se o caractere atual for '>', a tag foi completamente capturada
+                if (texto[j] == '>') {
+                    // Atualiza 'i' para a posicao de '>', indicando o fim da tag
+                    i = j;
+                    // Sai do loop interno
+                    break;
+                }
+                // Adiciona o caractere atual ao nome da tag
+                tag += texto[j];
+            }
+            
+            // Se for uma tag de fechamento, verifica se a tag de abertura esta no topo da pilha
+            if (is_closing_tag) {
+                // Se a pilha estiver vazia ou a tag de abertura no topo da pilha nao corresponder a tag de fechamento, retorna falso
+                if (stack_tags.empty() || stack_tags.pop() != tag) {
+                    return false;
+                }
+            } else {
+                // Se for uma tag de abertura, empilha o nome da tag
+                stack_tags.push(tag);
+            }
+        }
+        // Inicializa a variavel tag como vazia para a proxima
+        tag = "";
+    }
+    // Se a pilha estiver vazia, significa que todas as tags foram fechadas
+    return stack_tags.empty();
+}
+\end{lstlisting}
+
+\subsection{Exemplo de Funcionamento}
+Vamos observar o exemplo da verificação de aninhamentos, com as tags sendo empilhadas e desempilhadas à medida que são analisadas. Considere o código XML:
+\begin{lstlisting}[language=XML]
+<cenarios>
+  <cenario>
+    <nome>cenario-01</nome>
+  </cenario>
+</cenarios>
+\end{lstlisting}
+
+Com isso, podemos esquematizar a tabela que representa as etapas de empilhamento para verificar os passos dos algoritmo.
+
+\newpage
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Etapa} & \textbf{Pilha} \\
+\hline
+1. Início & \(\emptyset\) \\
+\hline
+2. Tag \texttt{<cenarios>} encontrada & \texttt{<cenarios>} \\
+\hline
+3. Tag \texttt{<cenario>} encontrada & \texttt{<cenario>} \\
+                                      & \texttt{<cenarios>} \\
+\hline
+4. Tag \texttt{<nome>} encontrada & \texttt{<nome>} \\
+                                   & \texttt{<cenario>} \\
+                                   & \texttt{<cenarios>} \\
+\hline
+5. Tag \texttt{</nome>} encontrada e removida & \texttt{<cenario>} \\
+                                              & \texttt{<cenarios>} \\
+\hline
+6. Tag \texttt{</cenario>} encontrada e removida & \texttt{<cenarios>} \\
+\hline
+7. Tag \texttt{</cenarios>} encontrada e removida & \(\emptyset\) \\
+\hline
+\end{tabular}
+\caption{Exemplo de verificação de aninhamento}
+\end{table}
+
+A pilha está vazia no final (\(\emptyset\)), o que indica que todas as tags de abertura tiveram uma correspondente tag de fechamento, confirmando que o aninhamento está correto.
+
+Também podemos verificar um caso em que tenhamos erros de aninhamento. 
+
+\begin{lstlisting}[language=XML]
+<cenarios>
+  <cenario>
+    <nome>cenario-01<nome> -- erro;
+  </cenario>
+</cenarios>
+\end{lstlisting}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Etapa} & \textbf{Estado da Pilha} \\
+\hline
+1. Início & \(\emptyset\) \\
+\hline
+2. Tag \texttt{<cenarios>} encontrada & \texttt{<cenarios>} \\
+\hline
+3. Tag \texttt{<cenario>} encontrada & \texttt{<cenario>} \\
+                                      & \texttt{<cenarios>} \\
+\hline
+4. Tag \texttt{<nome>} encontrada & \texttt{<nome>} \\
+                                        & \texttt{<cenario>} \\
+                                        & \texttt{<cenarios>} \\
+\hline
+5. Tag \texttt{<nome>} encontrada & \texttt{<nome>} \\
+                                     & \texttt{<nome>} \\
+                                     & \texttt{<cenario>} \\
+                                     & \texttt{<cenarios>} \\
+\hline
+6. Tag \texttt{</cenario>} encontrada & \texttt{<nome>} \\
+                                     & \texttt{<nome>} \\
+                                     & \texttt{<dimensoes>} \\
+                                     & \texttt{<cenario>} \\
+                                     & \texttt{<cenarios>} \\
+\hline
+\end{tabular}
+\caption{Processo de Verificação com Erro no Aninhamento}
+\end{table}
+
+No passo 6 o método irá retornar $false$, pois \texttt{<cenario>} não está no topo da pilha, visto que houve um erro durante o processo. Nesse caso, como a tag \texttt{<nome>} não foi fechada, ela impede o fechamento das anteriores.
+
+
